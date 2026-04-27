@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+</head>
+<body>
+  <h1>Members only</h1>
+
+  <% if (currentUser) { %>
+  <h2>Selamat datang, <%= `${currentUser.first_name} ${currentUser.last_name}` %>!</h2>
+    <p>Status kamu: <strong><%= currentUser.role %></strong></p>
+    
+    <a href="/new-message"><button>Tulis Pesan Baru</button></a>
+
+    <% if (messages && messages.length > 0) { %>
+         <% messages.forEach(msg => { %>
+             <h3><%= msg.title %></h3>
+             <p><%= msg.text %></p>
+             
+             <% if (currentUser && (currentUser.role === 'member' || currentUser.role === 'admin')) { %>
+                 <p><em>Ditulis oleh: <%= msg.first_name %> pada <%= msg.added_at %></em></p>
+             <% } else { %>
+                 <p><em>Ditulis oleh: Anonymous</em></p>
+             <% } %>
+             <hr>
+         <% }) %>
+      <% } else { %>
+         <p>Belum ada pesan di klub ini.</p>
+    <% } %>
+
+    <% if (currentUser.role === 'user') { %>
+      <p>Ingin melihat siapa penulis pesan? <a href="/join-club">Join the Club di sini!</a></p>
+    <% } %>
+
+    <a href="/log-out"><button style="color: red;">Logout</button></a>
+
+  <% } else { %>
+    <h2>Silakan Login untuk Masuk ke Gudang</h2>
+    
+    <form action="/log-in" method="POST">
+      <label for="username">Username:</label>
+      <input id="username" name="username" type="text" required />
+      <br><br>
+      <label for="password">Password:</label>
+      <input id="password" name="password" type="password" required />
+      <br><br>
+      <button type="submit">Log In</button>
+    </form>
+    
+    <p>Belum punya akun? <a href="/sign-up">Daftar Admin Baru</a></p>
+  <% } %>
+
+</body>
+</html>

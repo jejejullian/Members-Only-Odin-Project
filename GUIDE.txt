@@ -1,0 +1,100 @@
+=============================================================
+🛠️ GUIDE & CHECKLIST PROJECT: MEMBERS ONLY (THE ODIN PROJECT)
+=============================================================
+
+TAHAP 1: PERSIAPAN FONDASI (SERVER & DATABASE)
+-------------------------------------------------------------
+[ ] 1. Setup Environment Variables (.env)
+    - Pastikan file .env sudah berisi kredensial database yang benar (DB_USER, DB_PASSWORD, DB_NAME=members-only, dll).
+    - JANGAN PERNAH meng-commit file .env ke GitHub (pastikan sudah ada di .gitignore).
+
+[ ] 2. Sambungkan Node.js ke PostgreSQL (db/pool.js)
+    - Buat file `pool.js` di folder `db`.
+    - Gunakan library `pg` (Pool) untuk membuat koneksi.
+    - Export pool tersebut agar bisa dipakai di file controller nanti.
+
+[ ] 3. Setup Server Express (app.js)
+    - Panggil express, path, dan jalankan app.
+    - Set view engine ke 'ejs'.
+    - Atur folder views: `app.set("views", path.join(__dirname, "views"));`
+    - Tambahkan middleware: `app.use(express.urlencoded({ extended: true }));` (WAJIB agar form HTML terbaca).
+    - Buat route `app.get("/")` sederhana untuk test server.
+    - Jalankan dengan `nodemon app.js` dan pastikan tidak ada error.
+
+
+TAHAP 2: FITUR PENDAFTARAN (SIGN-UP)
+-------------------------------------------------------------
+[ ] 1. Buat Tampilan Form (views/sign-up.ejs)
+    - Buat form HTML dengan method="POST" dan action="/sign-up".
+    - Siapkan input untuk: first_name, last_name, username, password, dan confirm_password.
+
+[ ] 2. Amankan Password (controllers/userController.js)
+    - Tangkap data dari form menggunakan `req.body`.
+    - Validasi password (pastikan password == confirm_password).
+    - Gunakan `bcrypt.hash` untuk mengenkripsi password sebelum masuk ke query SQL. 
+    - (Ingat: hash itu asinkronus, gunakan async/await).
+
+[ ] 3. Simpan User ke Database
+    - Gunakan query `INSERT INTO users (first_name, last_name, username, password) VALUES ($1, $2, $3, $4)`.
+    - Redirect user kembali ke halaman Home ("/") atau halaman Login ("/login") setelah berhasil mendaftar.
+
+
+TAHAP 3: JANTUNG APLIKASI (AUTENTIKASI PASSPORT.JS)
+-------------------------------------------------------------
+*Catatan: Kerjakan bagian ini pelan-pelan. Lihat ulang materi TOP jika bingung.*
+
+[ ] 1. Setup Session di app.js
+    - Tambahkan middleware `express-session`. Berikan secret key yang aman (bisa taruh di .env).
+
+[ ] 2. Konfigurasi Passport (LocalStrategy)
+    - Tulis fungsi LocalStrategy.
+    - Langkah 1: Cari user berdasarkan username di database (SELECT * FROM users WHERE username = $1).
+    - Langkah 2: Jika user ada, gunakan `bcrypt.compare` untuk mencocokkan password dari form login dengan password hash di database.
+    - Selesaikan fungsi `passport.serializeUser` dan `passport.deserializeUser`.
+
+[ ] 3. Global User Variable (app.js)
+    - Tambahkan custom middleware ini SETELAH passport session, tapi SEBELUM routes Anda:
+      app.use((req, res, next) => {
+        res.locals.currentUser = req.user;
+        next();
+      });
+    - Fungsi: Agar variabel `currentUser` bisa langsung dipakai di semua file .ejs tanpa harus dikirim manual satu-satu lewat res.render.
+
+
+TAHAP 4: FITUR PESAN (MESSAGES)
+-------------------------------------------------------------
+[ ] 1. Form Pesan Baru (views/new-message.ejs)
+    - Buat form sederhana (title dan text).
+    - Pastikan halaman ini dan route POST-nya HANYA bisa diakses jika user sudah login (cek apakah `req.user` ada).
+
+[ ] 2. Simpan Pesan ke DB
+    - Ambil title dan text dari `req.body`.
+    - Ambil ID pembuat pesan dari `req.user.id`.
+    - Jalankan query: `INSERT INTO messages (title, text, user_id) VALUES ($1, $2, $3)`.
+
+[ ] 3. Tampilkan di Home (views/index.ejs)
+    - Di controller halaman Home, ambil semua pesan dari database.
+    - Gunakan SQL JOIN agar nama author ikut terbawa: 
+      `SELECT messages.*, users.username FROM messages JOIN users ON messages.user_id = users.id`.
+    - Kirim data pesan ke `index.ejs` dan gunakan EJS forEach loop (`<% messages.forEach(msg => { %>`) untuk menampilkannya.
+
+
+TAHAP 5: OTORISASI (LEVEL AKSES MEMBER)
+-------------------------------------------------------------
+[ ] 1. Fitur "Join the Club"
+    - Buat form kecil yang meminta input "Passcode Rahasia".
+    - Jika user memasukkan teks yang benar (misal kodenya "kucingterbang"), jalankan query: 
+      `UPDATE users SET role = 'member' WHERE id = $1` (gunakan req.user.id).
+    - (Opsional: Lakukan hal yang sama untuk status 'admin' jika ingin fitur hapus pesan).
+
+[ ] 2. Logika Tampilan (EJS If/Else)
+    - Di beranda (index.ejs), bungkus nama author dan tanggal dengan logika EJS:
+      <% if (currentUser && (currentUser.role === 'member' || currentUser.role === 'admin')) { %>
+          <p>Author: <%= msg.username %></p>
+          <p>Date: <%= msg.added_at %></p>
+      <% } else { %>
+          <p>Author: Anonymous</p>
+      <% } %>
+
+=============================================================
+STATUS: SIAP NCODING! 🚀
